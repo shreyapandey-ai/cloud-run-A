@@ -1,0 +1,10 @@
+Date/Time: Tue Feb 10 01:01:40 PM UTC 2026
+Disk Usage:
+Filesystem                         Size  Used Avail Use% Mounted on
+overlay                             95G   55G   41G  58% /
+tmpfs                               64M     0   64M   0% /dev
+/dev/sda1                           95G   55G   41G  58% /root
+/dev/disk/by-id/google-home-part1  4.8G  216M  4.4G   5% /home
+/dev/root                          2.0G  1.2G  760M  62% /usr/lib/modules
+shm                                 64M     0   64M   0% /dev/shm
+Current User: shreya_pandey

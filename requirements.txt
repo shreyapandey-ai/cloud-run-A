@@ -1,2 +1,6 @@
+<<<<<<< HEAD
 Flask
 gunicorn
+=======
+Flask==2.3.3
+>>>>>>> f50d3e2 (Initial commit: Cloud Run Monitoring App)
