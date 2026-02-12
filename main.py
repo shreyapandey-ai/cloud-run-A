@@ -1,5 +1,4 @@
 from flask import Flask, jsonify
-<<<<<<< HEAD
 import time
 import os
 import datetime
@@ -49,7 +48,6 @@ def analyze():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
-=======
 import os, time, datetime, socket, random, threading, platform
 
 app = Flask(__name__)
