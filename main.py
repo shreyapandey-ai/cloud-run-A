@@ -1,53 +1,4 @@
 from flask import Flask, jsonify
-import time
-import os
-import datetime
-
-app = Flask(__name__)
-
-START_TIME = time.time()
-
-@app.route("/")
-def home():
-    return "Hello from Cloud Run! System check complete."
-
-@app.route("/analyze")
-def analyze():
-    timestamp = datetime.datetime.utcnow().isoformat() + "Z"
-    uptime_seconds = int(time.time() - START_TIME)
-
-    load_avg = os.getloadavg()[0]
-    cpu_metric = round(min(load_avg * 20, 100), 2)
-
-    try:
-        with open("/sys/fs/cgroup/memory/memory.usage_in_bytes") as f:
-            memory_used = int(f.read())
-        with open("/sys/fs/cgroup/memory/memory.limit_in_bytes") as f:
-            memory_limit = int(f.read())
-        memory_metric = round((memory_used / memory_limit) * 100, 2)
-    except:
-        memory_metric = 0.0
-
-    health_score = max(0, 100 - int(cpu_metric + memory_metric))
-
-    if health_score > 80:
-        message = "System healthy"
-    elif health_score > 50:
-        message = "System under moderate load"
-    else:
-        message = "System under heavy load"
-
-    return jsonify({
-        "timestamp": timestamp,
-        "uptime_seconds": uptime_seconds,
-        "cpu_metric": cpu_metric,
-        "memory_metric": memory_metric,
-        "health_score": health_score,
-        "message": message
-    })
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
 import os, time, datetime, socket, random, threading, platform
 
 app = Flask(__name__)
@@ -58,9 +9,7 @@ history = []
 # CPU tracking
 # -----------------------
 CPU_LAST = None
-
 def get_cpu_percent():
-    """Reads cgroup CPU usage inside Cloud Run container with dynamic %."""
     global CPU_LAST
     try:
         with open("/sys/fs/cgroup/cpu.stat", "r") as f:
@@ -70,17 +19,15 @@ def get_cpu_percent():
             if line.startswith("usage_usec"):
                 usage_usec = int(line.strip().split()[1])
                 break
-
         if CPU_LAST is None:
             CPU_LAST = (usage_usec, time.time())
             return round(random.uniform(0.1, 5.0), 2)
-
         now = time.time()
         usage_diff = usage_usec - CPU_LAST[0]
         time_diff = now - CPU_LAST[1]
         CPU_LAST = (usage_usec, now)
         cpu_percent = (usage_diff / (time_diff * 1_000_000)) * 100
-        cpu_percent += random.uniform(-2, 2)  # small jitter
+        cpu_percent += random.uniform(-2, 2)
         return round(min(max(cpu_percent, 0.1), 100.0), 2)
     except:
         return round(random.uniform(0.1, 5.0), 2)
@@ -89,7 +36,6 @@ def get_cpu_percent():
 # RAM usage
 # -----------------------
 def get_ram_percent():
-    """Reads cgroup memory usage."""
     try:
         with open("/sys/fs/cgroup/memory.current", "r") as f:
             used = int(f.read().strip())
@@ -106,7 +52,6 @@ def get_ram_percent():
 # Disk usage
 # -----------------------
 def get_disk_percent(path="/tmp"):
-    """Disk usage with random variation."""
     try:
         st = os.statvfs(path)
         used_percent = ((st.f_blocks - st.f_bfree) / st.f_blocks) * 100
@@ -116,21 +61,24 @@ def get_disk_percent(path="/tmp"):
         return round(random.uniform(0.1, 5.0), 2)
 
 # -----------------------
-# Combined system metrics
+# System metrics
 # -----------------------
 def get_system_metrics():
     return {
         "cpu": get_cpu_percent(),
         "ram": get_ram_percent(),
         "disk": get_disk_percent("/tmp"),
-        "cpu_cores": os.cpu_count()
+        "cpu_cores": os.cpu_count(),
+        "api_requests": random.randint(0,1000),
+        "error_rate": round(random.random()*5,2)
     }
 
 # -----------------------
 # Health score
 # -----------------------
 def compute_health(metrics):
-    return max(0, min(100, round(100 - (metrics["cpu"]*0.4 + metrics["ram"]*0.35 + metrics["disk"]*0.25),2)))
+    score = 100 - (metrics["cpu"]*0.35 + metrics["ram"]*0.35 + metrics["disk"]*0.2 + metrics["error_rate"]*1)
+    return max(0, min(100, round(score,2)))
 
 # -----------------------
 # Background history tracker
@@ -143,9 +91,7 @@ def track_history():
             "timestamp": ts,
             **metrics,
             "simulated_users": random.randint(0,500),
-            "active_sessions": random.randint(0,400),
-            "api_requests_last_min": random.randint(0,1000),
-            "error_rate_percent": round(random.random()*5,2)
+            "active_sessions": random.randint(0,400)
         })
         if len(history) > 50:
             history.pop(0)
@@ -159,27 +105,127 @@ threading.Thread(target=track_history, daemon=True).start()
 @app.route("/")
 def home():
     return """
-    <html>
-    <head>
-        <title>Cloud Run Monitoring</title>
-        <style>
-            body { font-family:sans-serif; background:#f4f4f9; padding:20px; }
-            h1 { color:#2c3e50; }
-            a.button { padding:10px 20px; color:white; text-decoration:none; border-radius:5px; margin:5px; }
-            .analyze { background:#3498db; }
-            .history { background:#2ecc71; }
-        </style>
-    </head>
-    <body>
-        <h1>Hello from Cloud Run!</h1>
-        <p>I am Shreya Pandey and this is my code.</p>
-        <div>
-            <a href='/analyze' class='button analyze'>Go to /analyze</a>
-            <a href='/history' class='button history'>Go to /history</a>
-        </div>
-    </body>
-    </html>
-    """
+<!DOCTYPE html>
+<html>
+<head>
+<title>Cloud Run Professional Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body { margin:0; font-family:'Segoe UI',sans-serif; background:#0f172a; color:#f8fafc; }
+header { padding:20px; text-align:center; background:#1e293b; border-bottom:2px solid #3b82f6; }
+header h1 { margin:0; font-size:30px; color:#60a5fa; text-shadow: 1px 1px 3px #000; }
+.container { display:grid; grid-template-columns: repeat(auto-fit,minmax(400px,1fr)); gap:20px; padding:20px; }
+.card { background:#1e293b; padding:20px; border-radius:15px; border:1px solid #3b82f6; box-shadow: 0 4px 15px rgba(0,0,0,0.4); transition: transform 0.2s;}
+.card:hover { transform:translateY(-5px);}
+.card h2 { margin-top:0; font-size:18px; color:#60a5fa; border-bottom:1px solid #3b82f6; padding-bottom:6px;}
+.metric { margin:8px 0; font-size:16px; }
+.progress { background:#334155; height:12px; border-radius:6px; overflow:hidden; margin:5px 0 10px 0;}
+.progress-bar { height:100%; width:0%; transition: width 0.5s ease; border-radius:6px;}
+canvas { background:#0f172a; border-radius:10px; }
+footer { text-align:center; padding:15px; font-size:13px; color:#94a3b8; }
+.status-badge { padding:6px 14px; border-radius:15px; font-size:14px; display:inline-block; font-weight:bold;}
+.healthy { background:#16a34a; color:white;}
+.warning { background:#facc15; color:#1f2937;}
+.critical { background:#dc2626; color:white;}
+table { width:100%; border-collapse:collapse; font-size:13px; color:#f8fafc;}
+thead { background:#334155; }
+tbody tr:nth-child(even){background:#1e293b;}
+tbody tr:nth-child(odd){background:#111827;}
+th,td { padding:6px; text-align:left; }
+</style>
+</head>
+<body>
+<header><h1>🌐 Cloud Run Professional Dashboard</h1></header>
+<div class="container">
+<div class="card">
+<h2>Health Overview</h2>
+<div class="metric">Score: <strong id="healthScore">--</strong>%</div>
+<div id="healthStatus" class="status-badge">Loading...</div>
+</div>
+
+<div class="card">
+<h2>CPU Usage</h2>
+<canvas id="cpuChart" height="150"></canvas>
+</div>
+
+<div class="card">
+<h2>RAM Usage</h2>
+<canvas id="ramChart" height="150"></canvas>
+</div>
+
+<div class="card">
+<h2>Disk Usage</h2>
+<canvas id="diskChart" height="150"></canvas>
+</div>
+
+<div class="card">
+<h2>API & Error Rate</h2>
+<canvas id="apiChart" height="150"></canvas>
+</div>
+
+<div class="card">
+<h2>Recent History</h2>
+<table>
+<thead>
+<tr><th>Time</th><th>CPU %</th><th>RAM %</th><th>Disk %</th><th>API req</th><th>Errors %</th></tr>
+</thead>
+<tbody id="historyTable"></tbody>
+</table>
+</div>
+</div>
+<footer>Auto-refresh every 5s | Project: {os.getenv("GOOGLE_CLOUD_PROJECT","local")} | Service: {os.getenv("K_SERVICE","local_service")}</footer>
+
+<script>
+let cpuChart, ramChart, diskChart, apiChart;
+function initCharts(){
+    const ctxCPU = document.getElementById('cpuChart').getContext('2d');
+    const ctxRAM = document.getElementById('ramChart').getContext('2d');
+    const ctxDisk = document.getElementById('diskChart').getContext('2d');
+    const ctxAPI = document.getElementById('apiChart').getContext('2d');
+
+    cpuChart = new Chart(ctxCPU,{type:'line',data:{labels:[],datasets:[{label:'CPU %',data:[],borderColor:'#3b82f6',fill:true,backgroundColor:'rgba(59,130,246,0.3)',tension:0.4}]},options:{responsive:true,animation:{duration:500},scales:{y:{min:0,max:100}}}});
+    ramChart = new Chart(ctxRAM,{type:'line',data:{labels:[],datasets:[{label:'RAM %',data:[],borderColor:'#22c55e',fill:true,backgroundColor:'rgba(34,197,94,0.3)',tension:0.4}]},options:{responsive:true,animation:{duration:500},scales:{y:{min:0,max:100}}}});
+    diskChart = new Chart(ctxDisk,{type:'line',data:{labels:[],datasets:[{label:'Disk %',data:[],borderColor:'#f97316',fill:true,backgroundColor:'rgba(249,115,22,0.3)',tension:0.4}]},options:{responsive:true,animation:{duration:500},scales:{y:{min:0,max:100}}}});
+    apiChart = new Chart(ctxAPI,{type:'line',data:{labels:[],datasets:[{label:'API Requests',data:[],borderColor:'#eab308',fill:true,backgroundColor:'rgba(234,179,8,0.3)',tension:0.4},{label:'Error %',data:[],borderColor:'#dc2626',fill:false,tension:0.4}]},options:{responsive:true,animation:{duration:500},scales:{y:{min:0,max:100}}}});
+}
+initCharts();
+
+async function loadData(){
+    const res = await fetch('/analyze');
+    const data = await res.json();
+
+    // Health badge
+    document.getElementById('healthScore').innerText = data['health_score'];
+    const badge = document.getElementById('healthStatus');
+    badge.innerText = data['status_message'];
+    badge.className = 'status-badge '+(data['health_score']>80?'healthy':(data['health_score']>50?'warning':'critical'));
+
+    const ts = new Date().toLocaleTimeString();
+    function updateChart(chart,value,index){
+        chart.data.labels.push(ts);
+        chart.data.datasets[index].data.push(value);
+        if(chart.data.labels.length>20){chart.data.labels.shift(); chart.data.datasets.forEach(d=>d.data.shift());}
+        chart.update();
+    }
+    updateChart(cpuChart,data.resources.cpu,0);
+    updateChart(ramChart,data.resources.ram,0);
+    updateChart(diskChart,data.resources.disk,0);
+    updateChart(apiChart,data.resources.api_requests,0);
+    updateChart(apiChart,data.resources.error_rate,1);
+
+    // Update history
+    const table = document.getElementById('historyTable');
+    table.innerHTML = '';
+    data.history_snapshot.slice(-10).forEach(item=>{
+        table.innerHTML += `<tr><td>${item.timestamp}</td><td>${item.cpu}</td><td>${item.ram}</td><td>${item.disk}</td><td>${item.api_requests}</td><td>${item.error_rate}</td></tr>`;
+    });
+}
+loadData();
+setInterval(loadData,5000);
+</script>
+</body>
+</html>
+"""
 
 @app.route("/analyze")
 def analyze():
@@ -234,19 +280,14 @@ def analyze():
             },
             "history_snapshot": history
         }
-
         return jsonify(payload)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e)}),500
 
 @app.route("/history")
 def get_history():
     return jsonify({"history": history})
 
-# -----------------------
-# Main
-# -----------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT",8080))
     app.run(host="0.0.0.0", port=port)
-       f50d3e2 (Initial commit: Cloud Run Monitoring App)
