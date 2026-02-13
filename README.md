@@ -19,13 +19,6 @@ Live demo: https://cloud-run-monitoring-650901251542.us-central1.run.app/
 
 ---
 
-##  Project Structure
-
--cloud-run-A/
--├── main.py
--├── README.md
--└── .gitignore
-
 
 - **main.py** — Flask application serving the dashboard and the `/analyze` API  
 - **README.md** — Project documentation  
