@@ -1,13 +1,13 @@
-# 🚀 Cloud Run Professional Monitoring Dashboard
+# Cloud Run Professional Monitoring Dashboard
 
 A real‑time system monitoring dashboard built with **Flask** and **Chart.js** and deployed on **Google Cloud Run**.  
 It visualizes live metrics — CPU, RAM, Disk, API requests, and error rate — with animated charts and a clean, production‑ready UI.
 
-👉 Live demo: https://cloud-run-monitoring-650901251542.us-central1.run.app/
+Live demo: https://cloud-run-monitoring-650901251542.us-central1.run.app/
 
 ---
 
-## 🧠 Features
+## Features
 
 ✅ Professional, responsive UI with dark theme  
 ✅ Animated, live charts (CPU / RAM / Disk / API / Errors)  
@@ -19,7 +19,7 @@ It visualizes live metrics — CPU, RAM, Disk, API requests, and error rate — 
 
 ---
 
-## 🗂 Project Structure
+##  Project Structure
 
 cloud-run-A/
 ├── main.py
@@ -33,7 +33,7 @@ cloud-run-A/
 
 ---
 
-## 🧩 How it Works
+##  How it Works
 
 1. The app collects system metrics (CPU, RAM, Disk, etc.) every 5 seconds with a background thread.  
 2. The `/analyze` endpoint returns a JSON payload with metrics and health info.  
@@ -44,7 +44,7 @@ cloud-run-A/
 
 ---
 
-## 🛠 Local Development
+##  Local Development
 
 Make sure you are using **Python 3.9+**.
 
@@ -86,7 +86,7 @@ Replace cloud-run-dashboard with your service name.
 3. Open the deployed URL
 After deployment, Cloud Run will return a URL — open it in your browser.
 
-📦 Environment Variables (Optional)
+\Environment Variables (Optional)
 Variable	Purpose
 GOOGLE_CLOUD_PROJECT	GCP project name shown on dashboard
 K_SERVICE	Cloud Run service name
