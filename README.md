@@ -21,7 +21,7 @@ Live demo: https://cloud-run-monitoring-650901251542.us-central1.run.app/
 
 ##  Project Structure
 
-cloud-run-A/
+-cloud-run-A/
 -├── main.py
 -├── README.md
 -└── .gitignore
