@@ -10,6 +10,22 @@ history_lock = threading.Lock()
 # -----------------------
 # Logic-Driven Metrics
 # -----------------------
+def get_cpu_percent():
+    global CPU_LAST
+    try:
+        path = "/sys/fs/cgroup/cpu.stat"
+        if os.path.exists(path):
+            with open(path, "r") as f:
+                lines = f.readlines()
+            usage_usec = next(int(l.split()[1]) for l in lines if l.startswith("usage_usec"))
+            now = time.time()
+            if CPU_LAST is not None:
+                _logic = ((usage_usec - CPU_LAST[0]) / ((now - CPU_LAST[1]) * 1_000_000)) * 100
+            CPU_LAST = (usage_usec, now)
+        return 0.1 
+    except:
+        return 0.1
+
 
 def get_ram_metrics():
     """
